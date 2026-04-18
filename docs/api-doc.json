@@ -1,0 +1,1093 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Palpity API v1 — Orderbook",
+    "description": "> ⚠️ **Ordens de liquidez (AMM) não aparecem na API**\n>\n> O book exibido na interface inclui ordens de liquidez automatizadas inseridas pela Oracore (Liquidez/AMM), que não são retornadas pelos endpoints da API.\n\nAPI pública e autenticada para o sistema de Orderbook da Palpity.\n\n# Autenticação\n\nA autenticação é feita via **Bearer Token** no header `Authorization`.\n\nO token é gerado a partir da sua **API Key** e **API Secret**, codificados em Base64:\n\n```\nAuthorization: Bearer base64(apiKey:apiSecret)\n```\n\n<details>\n  <summary>Exemplo de autenticação em JavaScript</summary>\n\n  ```javascript\n  const apiKey = 'pk_xxx';\n  const apiSecret = 'sk_yyy';\n  const token = btoa(apiKey + ':' + apiSecret);\n\n  const headers = {\n    'Authorization': `Bearer ${token}`,\n    'Accept': 'application/json',\n    'Content-Type': 'application/json'\n  };\n\n  fetch('https://app.palpity.com/api/v1/markets', {\n    method: 'GET',\n    headers\n  })\n  .then(res => res.json())\n  .then(data => console.log(data));\n  ```\n</details>\n\n<br/>\n\n# Rotas Públicas vs Autenticadas\n\n- **Rotas públicas** (tag `Public`): não requerem autenticação.\n- **Rotas autenticadas** (tags `Orders`, `Balance & Positions`, `Trades`): requerem o header `Authorization` com o Bearer Token.\n\n<br/>\n\n# Base URL\n\n```\nhttps://app.palpity.com/api/v1\n```\n\n<br/>\n\n> **Taxa zero:** Todas as negociações realizadas via API possuem **taxa 0%** para todos os tipos de ordens.\n",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Palpity",
+      "url": "https://app.palpity.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://app.palpity.com/api/v1",
+      "description": "Produção"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Public",
+      "description": "Rotas públicas — não requerem autenticação."
+    },
+    {
+      "name": "Orders",
+      "description": "Gerenciamento de ordens — requer autenticação."
+    },
+    {
+      "name": "Balance & Positions",
+      "description": "Saldo e posições do usuário — requer autenticação."
+    },
+    {
+      "name": "Trades",
+      "description": "Histórico de execuções (fills) do usuário — requer autenticação."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Token gerado via base64(apiKey:apiSecret)"
+      }
+    },
+    "parameters": {
+      "MarketIdPath": {
+        "name": "marketId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "ID do mercado"
+      },
+      "OrderIdPath": {
+        "name": "orderId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer"
+        },
+        "description": "ID da ordem"
+      },
+      "PageQuery": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 1
+        },
+        "description": "Página (default 1)"
+      },
+      "LimitQuery": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100
+        },
+        "description": "Itens por página, 1–100 (default 20)"
+      },
+      "LimitQuery200": {
+        "name": "limit",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 50,
+          "minimum": 1,
+          "maximum": 200
+        },
+        "description": "Máximo de resultados, 1–200 (default 50)"
+      },
+      "PerPageQuery": {
+        "name": "perPage",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100
+        },
+        "description": "Itens por página, 1–100 (default 20)"
+      }
+    },
+    "schemas": {
+      "Market": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "example": "Quem será o próximo presidente?"
+          },
+          "slug": {
+            "type": "string",
+            "example": "quem-sera-o-proximo-presidente"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "FROZEN",
+              "RESOLVED",
+              "CANCELED"
+            ],
+            "example": "OPEN"
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "selections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Selection"
+            }
+          }
+        }
+      },
+      "Selection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "Sim"
+          },
+          "marketId": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "volume24h": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "OrderbookEntry": {
+        "type": "object",
+        "properties": {
+          "price": {
+            "type": "string",
+            "example": "0.65"
+          },
+          "quantity": {
+            "type": "string",
+            "example": "100.00"
+          }
+        }
+      },
+      "OrderbookResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "integer"
+          },
+          "selections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "selectionId": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "bids": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderbookEntry"
+                  }
+                },
+                "asks": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderbookEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": [
+          "selectionId",
+          "side",
+          "type"
+        ],
+        "properties": {
+          "selectionId": {
+            "type": "integer",
+            "description": "ID da seleção",
+            "example": 1
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ],
+            "description": "Lado da ordem",
+            "example": "BUY"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "LIMIT",
+              "MARKET"
+            ],
+            "description": "Tipo da ordem",
+            "example": "LIMIT"
+          },
+          "price": {
+            "type": "string",
+            "description": "Preço (0.01–0.99), obrigatório para LIMIT",
+            "example": "0.65"
+          },
+          "amount": {
+            "type": "string",
+            "description": "Quantidade de shares",
+            "example": "10.00"
+          },
+          "total": {
+            "type": "string",
+            "description": "Valor total a gastar (somente para MARKET BUY)",
+            "example": "50.00"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "selectionId": {
+            "type": "integer"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "LIMIT",
+              "MARKET"
+            ]
+          },
+          "price": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "filledAmount": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "PARTIALLY_FILLED",
+              "FILLED",
+              "CANCELED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Balance": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "example": "BRL"
+          },
+          "amount": {
+            "type": "string",
+            "example": "1500.00"
+          },
+          "locked": {
+            "type": "string",
+            "example": "200.00"
+          }
+        }
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "marketId": {
+            "type": "integer"
+          },
+          "selectionId": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "string"
+          },
+          "avgPrice": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "CLOSED"
+            ]
+          }
+        }
+      },
+      "Trade": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "orderId": {
+            "type": "integer"
+          },
+          "marketId": {
+            "type": "integer"
+          },
+          "selectionId": {
+            "type": "integer"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "BUY",
+              "SELL"
+            ]
+          },
+          "price": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {}
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "perPage": {
+            "type": "integer"
+          },
+          "lastPage": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "message": {
+            "type": "string",
+            "example": "Validation error"
+          },
+          "errors": {
+            "type": "object"
+          }
+        }
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Dados inválidos",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Não autenticado — token inválido ou ausente",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Recurso não encontrado",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/markets": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "List Markets",
+        "description": "Lista mercados disponíveis no sistema de orderbook (paginado, com filtros).",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PageQuery"
+          },
+          {
+            "$ref": "#/components/parameters/LimitQuery"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "FROZEN",
+                "RESOLVED",
+                "CANCELED"
+              ],
+              "default": "OPEN"
+            },
+            "description": "Filtrar por status (default: OPEN)"
+          },
+          {
+            "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por categoria"
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Busca textual no título"
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtrar por slug exato"
+          },
+          {
+            "name": "orderBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "closesAt",
+                "createdAt",
+                "title",
+                "id"
+              ],
+              "default": "closesAt"
+            },
+            "description": "Campo de ordenação (default: closesAt)"
+          },
+          {
+            "name": "orderDirection",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ],
+              "default": "ASC"
+            },
+            "description": "Direção da ordenação (default: ASC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de mercados paginada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Market"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/markets/{marketId}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Get Market by ID",
+        "description": "Retorna informações detalhadas de um mercado específico.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/MarketIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes do mercado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Market"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "List Categories",
+        "description": "Lista categorias de mercados que possuem pelo menos um mercado orderbook aberto, com volume 24h.",
+        "responses": {
+          "200": {
+            "description": "Lista de categorias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Category"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/orderbook": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Get Orderbook",
+        "description": "Retorna o orderbook completo de um mercado.\n\nInforme **marketId** ou **selectionId** (pelo menos um é obrigatório).\nSe ambos forem enviados, `marketId` tem prioridade.\n",
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID do mercado (prioridade se ambos forem enviados)"
+          },
+          {
+            "name": "selectionId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID da seleção (resolve para o mercado correspondente)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "minimum": 1,
+              "maximum": 200
+            },
+            "description": "Profundidade por lado, 1–200 (default: 50)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orderbook do mercado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderbookResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Create Order",
+        "description": "Cria uma nova ordem no orderbook.\n\n**LIMIT orders:** envie `price` (0.01–0.99) e `amount` (quantidade de shares).\n\n**MARKET BUY:** envie `total` (valor total a gastar).\n\n**MARKET SELL:** envie `amount` (quantidade de shares a vender).\n\n> **Taxa zero:** Todas as negociações realizadas via API possuem **taxa 0%** para todos os tipos de ordens.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrderRequest"
+              },
+              "examples": {
+                "limitBuy": {
+                  "summary": "Ordem Limitada de Compra",
+                  "value": {
+                    "selectionId": 1,
+                    "side": "BUY",
+                    "type": "LIMIT",
+                    "price": "0.65",
+                    "amount": "10.00"
+                  }
+                },
+                "limitSell": {
+                  "summary": "Ordem Limitada de Venda",
+                  "value": {
+                    "selectionId": 1,
+                    "side": "SELL",
+                    "type": "LIMIT",
+                    "price": "0.70",
+                    "amount": "5.00"
+                  }
+                },
+                "marketBuy": {
+                  "summary": "Ordem a Mercado de Compra",
+                  "value": {
+                    "selectionId": 1,
+                    "side": "BUY",
+                    "type": "MARKET",
+                    "total": "50.00"
+                  }
+                },
+                "marketSell": {
+                  "summary": "Ordem a Mercado de Venda",
+                  "value": {
+                    "selectionId": 1,
+                    "side": "SELL",
+                    "type": "MARKET",
+                    "amount": "10.00"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ordem criada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "List User Orders",
+        "description": "Lista as ordens do usuário autenticado com filtros opcionais.\n\n> **Taxa zero:** Todas as negociações realizadas via API possuem **taxa 0%** para todos os tipos de ordens.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por mercado"
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por grupo de mercado"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "PARTIALLY_FILLED",
+                "FILLED",
+                "CANCELED",
+                "ALL"
+              ],
+              "default": "ALL"
+            },
+            "description": "Filtrar por status (default: ALL)"
+          },
+          {
+            "$ref": "#/components/parameters/LimitQuery200"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de ordens do usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/orders/{orderId}": {
+      "get": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Get Order by ID",
+        "description": "Retorna uma ordem específica pelo ID (deve pertencer ao usuário autenticado).\n\n> **Taxa zero:** Todas as negociações realizadas via API possuem **taxa 0%** para todos os tipos de ordens.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalhes da ordem",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Cancel Order",
+        "description": "Cancela uma ordem limitada aberta (OPEN ou PARTIALLY_FILLED).\n\n> **Taxa zero:** Todas as negociações realizadas via API possuem **taxa 0%** para todos os tipos de ordens.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/OrderIdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ordem cancelada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/balance": {
+      "get": {
+        "tags": [
+          "Balance & Positions"
+        ],
+        "summary": "Get Balance",
+        "description": "Retorna o saldo do usuário (moeda principal + moedas sintéticas de posição no orderbook).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saldo do usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Balance"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/positions": {
+      "get": {
+        "tags": [
+          "Balance & Positions"
+        ],
+        "summary": "List Positions",
+        "description": "Lista as posições do usuário no orderbook (paginado, com filtros).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por mercado"
+          },
+          {
+            "name": "groupId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por grupo"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "CLOSED",
+                "ALL"
+              ],
+              "default": "OPEN"
+            },
+            "description": "Filtrar por status (default: OPEN)"
+          },
+          {
+            "$ref": "#/components/parameters/PerPageQuery"
+          },
+          {
+            "$ref": "#/components/parameters/PageQuery"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de posições paginada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PaginatedResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Position"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/trades": {
+      "get": {
+        "tags": [
+          "Trades"
+        ],
+        "summary": "List Trades",
+        "description": "Lista as execuções (transaction legs) recentes do usuário autenticado.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "marketId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por mercado"
+          },
+          {
+            "name": "selectionId",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filtrar por seleção"
+          },
+          {
+            "$ref": "#/components/parameters/LimitQuery200"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de trades do usuário",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Trade"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  }
+}
