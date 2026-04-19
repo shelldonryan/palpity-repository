@@ -33,17 +33,18 @@ scheduler = initialize_app()
 def health():
     return jsonify({"status": "OK", "scheduler": "running"}), 200
 
-@app.route('/results')
-def results():
-    from utils.db_client import get_results_with_datetime_analysis
-    data = get_results_with_datetime_analysis()
-    return jsonify(data)
-
 @app.route('/tags')
 def tags():
     from utils.db_client import get_all_tags
     data = get_all_tags()
     return jsonify(data)
+
+@app.route('/data')
+def data():
+    from utils.db_client import get_all_data_results, get_all_data_market
+    data_results = get_all_data_results()
+    data_market = get_all_data_market()
+    return jsonify({"results": data_results, "market": data_market})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))

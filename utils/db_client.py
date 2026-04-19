@@ -231,8 +231,6 @@ def get_results_by_tag(tag, limit=100):
     conn.close()
     return rows
 
-# utils/db_client.py (adicionar função)
-
 def get_results_with_datetime_analysis(tag=None):
     """Retorna resultados com análise de hora e dia da semana."""
     conn = sqlite3.connect(DB_PATH)
@@ -280,6 +278,24 @@ def get_results_by_threshold(tag, threshold, limit=50):
         ORDER BY resolvedAt DESC 
         LIMIT ?
     """, (tag, threshold, limit))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_all_data_results():
+    """Retorna todos os dados do banco."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM round_results")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def get_all_data_market():
+    """Retorna todos os dados do banco."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM market_data")
     rows = cursor.fetchall()
     conn.close()
     return rows
