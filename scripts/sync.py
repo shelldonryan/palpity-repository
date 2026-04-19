@@ -10,7 +10,10 @@ SYNC_FILE = "./data/last_sync.txt"
 
 def get_last_sync():
     if not os.path.exists(SYNC_FILE):
-        return None
+        os.makedirs(os.path.dirname(SYNC_FILE), exist_ok=True)
+        with open(SYNC_FILE, "w") as f:
+            f.write(datetime.now(ZoneInfo("America/Recife")).isoformat())
+        return datetime.now(ZoneInfo("America/Recife")).isoformat()
 
     with open(SYNC_FILE, "r") as f:
         return f.read().strip()
