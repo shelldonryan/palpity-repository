@@ -1,20 +1,12 @@
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import requests
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 
 API_URL = "https://palpity-repository.onrender.com/data"
 DB_PATH = "./data/palpity.db"
 SYNC_FILE = "./data/last_sync.txt"
 
-
-# =========================
-# LAST SYNC
-# =========================
 def get_last_sync():
     if not os.path.exists(SYNC_FILE):
         return None
@@ -25,21 +17,13 @@ def get_last_sync():
 
 def save_last_sync():
     with open(SYNC_FILE, "w") as f:
-        f.write(datetime.utcnow().isoformat())
+        f.write(datetime.now(timezone.utc).isoformat())
 
-
-# =========================
-# FETCH
-# =========================
 def fetch_data():
     since = get_last_sync()
 
     try:
         url = API_URL
-        if since:
-            url += f"?since={since}"
-
-        print(f"Buscando desde: {since}")
 
         r = requests.get(url, timeout=15)
         r.raise_for_status()
@@ -50,17 +34,9 @@ def fetch_data():
         print("Erro:", e)
         return None
 
-
-# =========================
-# DB
-# =========================
 def get_conn():
     return sqlite3.connect(DB_PATH)
 
-
-# =========================
-# ROUND RESULTS
-# =========================
 def insert_round_results(rows):
     conn = get_conn()
     cursor = conn.cursor()
@@ -104,10 +80,6 @@ def insert_round_results(rows):
 
     return inserted
 
-
-# =========================
-# MARKET DATA
-# =========================
 def insert_market_data(rows):
     conn = get_conn()
     cursor = conn.cursor()
@@ -169,10 +141,6 @@ def insert_market_data(rows):
 
     return inserted
 
-
-# =========================
-# SYNC
-# =========================
 def sync():
     data = fetch_data()
 
@@ -187,11 +155,8 @@ def sync():
     r_inserted = insert_round_results(results)
     m_inserted = insert_market_data(market)
 
-    save_last_sync()
-
     print(f"Inseridos: {r_inserted} results | {m_inserted} market")
     print("OK\n")
-
 
 if __name__ == "__main__":
     sync()

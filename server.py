@@ -5,6 +5,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from scripts.collector import collect_orderbook
 from scripts.collector_result import collect_recent_results
 from utils.db_client import init_db, init_results_table
+from scripts.sync import save_last_sync, get_last_sync
 
 app = Flask(__name__)
 
@@ -42,10 +43,10 @@ def tags():
 @app.route('/data')
 def data():
     from utils.db_client import get_all_data_results, get_all_data_market
-
-    since = request.args.get("since")
-    data_results = get_all_data_results(since)
-    data_market = get_all_data_market(since)
+    last_sync = get_last_sync()
+    data_results = get_all_data_results(last_sync)
+    data_market = get_all_data_market(last_sync)
+    save_last_sync()
     return jsonify({"results": data_results, "market": data_market})
 
 if __name__ == "__main__":
