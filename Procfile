@@ -1,2 +1,2 @@
-web: python scripts/api_server.py
+web: python scripts/server.py
 worker: python main.py
