@@ -282,20 +282,20 @@ def get_results_by_threshold(tag, threshold, limit=50):
     conn.close()
     return rows
 
-def get_all_data_results():
+def get_all_data_results(since):
     """Retorna todos os dados do banco."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM round_results")
+    cursor.execute("SELECT * FROM round_results WHERE createdAt > ?", (since))
     rows = cursor.fetchall()
     conn.close()
     return rows
 
-def get_all_data_market():
+def get_all_data_market(since):
     """Retorna todos os dados do banco."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM market_data")
+    cursor.execute("SELECT * FROM market_data WHERE timestamp > ?", (since))
     rows = cursor.fetchall()
     conn.close()
     return rows

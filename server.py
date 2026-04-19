@@ -1,5 +1,5 @@
 import os
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from scripts.collector import collect_orderbook
@@ -42,8 +42,10 @@ def tags():
 @app.route('/data')
 def data():
     from utils.db_client import get_all_data_results, get_all_data_market
-    data_results = get_all_data_results()
-    data_market = get_all_data_market()
+
+    since = request.args.get("since")
+    data_results = get_all_data_results(since)
+    data_market = get_all_data_market(since)
     return jsonify({"results": data_results, "market": data_market})
 
 if __name__ == "__main__":

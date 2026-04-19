@@ -1,10 +1,9 @@
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 import pandas as pd
-from datetime import datetime, timedelta
-from utils.db_client import get_results_by_tag, get_last_n_rows, init_results_table
+from utils.db_client import get_results_by_tag, init_results_table
 
 def analyze_accuracy_by_tag(tag):
     """Analisa acurácia das previsões por rodovia."""
