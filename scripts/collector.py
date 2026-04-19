@@ -28,6 +28,7 @@ def get_orderbook_info(market_id):
 
     books = orderbook_response["data"]["books"]
     return books
+
 def collect_orderbook():
     print(f"[INFO] Coletando orderbook... {datetime.now().strftime('%H:%M:%S')}")
     
@@ -35,22 +36,21 @@ def collect_orderbook():
     books = get_orderbook_info(market_id)
 
     for sel in market.get("selections", []):
-        selection_id = str(sel["id"])  # chave do books é string
-        name = sel.get("label", "N/A")  # campo correto é "label"
+        selection_id = str(sel["id"])
+        name = sel.get("label", "N/A") 
         implied_prob = sel.get("impliedProb", "0.00")
 
-        # 4. Busca bids/asks do orderbook para essa selection
         book = books.get(selection_id, {})
         bids = book.get("bids", [])
         asks = book.get("asks", [])
 
-        # 5. Pega o primeiro bid e ask (melhor preço disponível)
         first_bid = bids[0] if bids else {"price": "0.00", "amount": "0.00"}
         first_ask = asks[0] if asks else {"price": "0.00", "amount": "0.00"}
 
         data = {
             "timestamp": datetime.now().isoformat(),
             "marketId": market_id,
+            "tag": market.get("tag", "N/A"),
             "selectionId": selection_id,
             "selectionName": name,
             "impliedProb": float(implied_prob),

@@ -13,13 +13,14 @@ def get_headers():
         "Content-Type": "application/json"
     }
 
-def get_markets(search=None, status="OPEN", page=1, limit=20):
+def get_markets(search=None, status="OPEN", page=1, limit=20, orderDirection="ASC"):
     """Lista mercados com filtros opcionais."""
     url = f"{API_BASE_URL}/markets"
     params = {
         "status": status,
         "page": page,
-        "limit": limit
+        "limit": limit,
+        "orderDirection": orderDirection
     }
     if search:
         params["search"] = search

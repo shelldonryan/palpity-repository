@@ -1,0 +1,14 @@
+[INFO] Coletando orderbook... 14:56:23
+[INFO] Dados salvos no banco: Mais de 119 - 0.0
+[INFO] Dados salvos no banco: Até 119 - 0.05
+[INFO] Coletando orderbook... 14:57:25
+[INFO] Dados salvos no banco: Mais de 119 - 0.0
+[INFO] Dados salvos no banco: Até 119 - 0.05
+Traceback (most recent call last):
+  File "D:\www\palpity_rodovias\scripts\collector.py", line 80, in <module>
+    main()
+    ~~~~^^
+  File "D:\www\palpity_rodovias\scripts\collector.py", line 77, in main
+    time.sleep(60)
+    ~~~~~~~~~~^^^^
+KeyboardInterrupt
