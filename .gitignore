@@ -1,4 +1,10 @@
 .venv
-config.py
 logs.txt
 data/palpity.db
+
+*.pyc
+__pycache__/
+*.db
+logs/
+.env
+.DS_Store
