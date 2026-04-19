@@ -21,11 +21,9 @@ def get_last_sync():
 
 def save_last_sync():
     with open(SYNC_FILE, "w") as f:
-       datetime.now(ZoneInfo("America/Recife")).isoformat()
+       f.write(datetime.now(ZoneInfo("America/Recife")).isoformat())
 
 def fetch_data():
-    since = get_last_sync()
-
     try:
         url = API_URL
 
