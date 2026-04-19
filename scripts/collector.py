@@ -1,44 +1,78 @@
-# scripts/collector.py
-from utils.api_client import get_orderbook, get_market, save_to_csv
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from utils.api_client import get_markets, get_orderbook, save_to_csv
+from utils.db_client import save_to_db, init_db
 import time
 from datetime import datetime
 
-# ID do seu mercado de rodovia (exemplo: 123)
-MARKET_ID = 123  # Substitua pelo ID real do mercado "Quantos carros?"
+def get_market_info():
+    response = get_markets(search="rodovia")
+    if not response or not response["data"].get("items"):
+        with open("logs.txt", "a") as f:
+            f.write(f"[AVISO] Nenhum mercado encontrado. {datetime.now().strftime('%H:%M:%S')}\n")
+        return
 
+    market = response["data"]["items"][0]
+    market_id = market["id"]
+
+    return (market, market_id)
+
+def get_orderbook_info(market_id):
+    orderbook_response = get_orderbook(market_id=market_id)
+    if not orderbook_response or not orderbook_response.get("success"):
+        with open("logs.txt", "a") as f:
+            f.write(f"[AVISO] Orderbook não disponível. {datetime.now().strftime('%H:%M:%S')}\n")
+        return
+
+    books = orderbook_response["data"]["books"]
+    return books
 def collect_orderbook():
     print(f"[INFO] Coletando orderbook... {datetime.now().strftime('%H:%M:%S')}")
-    orderbook = get_orderbook(market_id=MARKET_ID)
-    if orderbook:
-        # Extrai dados relevantes
-        market_id = orderbook.get("marketId")
-        selections = orderbook.get("selections", [])
-        for sel in selections:
-            selection_id = sel.get("selectionId")
-            name = sel.get("name")
-            bids = sel.get("bids", [])
-            asks = sel.get("asks", [])
-            # Salva o primeiro bid e ask como exemplo
-            first_bid = bids if bids else {"price": "0.00", "quantity": "0.00"}
-            first_ask = asks if asks else {"price": "0.00", "quantity": "0.00"}
-            data = {
-                "timestamp": datetime.now().isoformat(),
-                "marketId": market_id,
-                "selectionId": selection_id,
-                "selectionName": name,
-                "bidPrice": first_bid["price"],
-                "bidQuantity": first_bid["quantity"],
-                "askPrice": first_ask["price"],
-                "askQuantity": first_ask["quantity"]
-            }
-            save_to_csv(data)
+    
+    (market, market_id) = get_market_info()
+    books = get_orderbook_info(market_id)
+
+    for sel in market.get("selections", []):
+        selection_id = str(sel["id"])  # chave do books é string
+        name = sel.get("label", "N/A")  # campo correto é "label"
+        implied_prob = sel.get("impliedProb", "0.00")
+
+        # 4. Busca bids/asks do orderbook para essa selection
+        book = books.get(selection_id, {})
+        bids = book.get("bids", [])
+        asks = book.get("asks", [])
+
+        # 5. Pega o primeiro bid e ask (melhor preço disponível)
+        first_bid = bids[0] if bids else {"price": "0.00", "amount": "0.00"}
+        first_ask = asks[0] if asks else {"price": "0.00", "amount": "0.00"}
+
+        data = {
+            "timestamp": datetime.now().isoformat(),
+            "marketId": market_id,
+            "selectionId": selection_id,
+            "selectionName": name,
+            "impliedProb": float(implied_prob),
+            "bestBid": float(first_bid["price"]) if bids else 0.0,
+            "bestAsk": float(first_ask["price"]) if asks else 0.0,
+            "spread": float(first_ask["price"]) - float(first_bid["price"]) if bids and asks else 0.0,
+            "bidVolume": float(first_bid["amount"]) if bids else 0.0,
+            "askVolume": float(first_ask["amount"]) if asks else 0.0,
+            "totalBidVolume": sum(float(b["amount"]) for b in bids),
+            "totalAskVolume": sum(float(a["amount"]) for a in asks),
+        }
+
+        save_to_db(data)
     else:
-        print("[AVISO] Orderbook não disponível.")
+        with open("logs.txt", "a") as f:
+            f.write(f"[AVISO] Orderbook não disponível. {datetime.now().strftime('%H:%M:%S')}\n")
 
 def main():
+    init_db()
     while True:
         collect_orderbook()
-        time.sleep(300)  # Espera 5 minutos entre rodadas
+        time.sleep(60)
 
 if __name__ == "__main__":
     main()
