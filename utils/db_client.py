@@ -286,7 +286,7 @@ def get_all_data_results(since):
     """Retorna todos os dados do banco."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM round_results WHERE createdAt > ?", (since))
+    cursor.execute("SELECT * FROM round_results WHERE resolvedAt > ?", (since))
     rows = cursor.fetchall()
     conn.close()
     return rows

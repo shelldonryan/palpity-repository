@@ -1,6 +1,7 @@
 import requests
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime
+from zoneinfo import ZoneInfo
 import os
 
 API_URL = "https://palpity-repository.onrender.com/data"
@@ -17,7 +18,7 @@ def get_last_sync():
 
 def save_last_sync():
     with open(SYNC_FILE, "w") as f:
-        f.write(datetime.now(timezone.utc).isoformat())
+       datetime.now(ZoneInfo("America/Recife")).isoformat()
 
 def fetch_data():
     since = get_last_sync()
