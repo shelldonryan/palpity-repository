@@ -1,19 +1,50 @@
+import os
 from flask import Flask, jsonify
-from utils.db_client import get_results_with_datetime_analysis, get_all_tags
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from scripts.collector import collect_orderbook
+from scripts.collector_result import collect_recent_results
+from utils.db_client import init_db, init_results_table
 
 app = Flask(__name__)
 
-@app.route("/api/results/<tag>")
-def get_results(tag):
-    """Retorna resultados de uma rodovia."""
-    results = get_results_with_datetime_analysis(tag)
-    return jsonify(results)
+# Inicializa banco e scheduler
+def initialize_app():
+    print("⏳ Inicializando tabelas...")
+    init_db()
+    init_results_table()
+    print("✅ Tabelas prontas")
 
-@app.route("/api/tags")
-def get_tags():
-    """Retorna todas as rodovias."""
-    tags = get_all_tags()
-    return jsonify({"tags": tags})
+    # Inicia scheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(collect_orderbook, IntervalTrigger(seconds=60), id="collector_job")
+    scheduler.add_job(collect_recent_results, IntervalTrigger(seconds=180), id="result_collector_job")
+    scheduler.add_job(lambda: print("[INFO] Validação agendada"), IntervalTrigger(hours=1), id="validation_job")
+    scheduler.start()
+    print("✅ Scheduler iniciado")
+
+    return scheduler
+
+# Inicializa ao começar
+scheduler = initialize_app()
+
+# Rotas
+@app.route('/')
+def health():
+    return jsonify({"status": "OK", "scheduler": "running"}), 200
+
+@app.route('/results')
+def results():
+    from utils.db_client import get_results_with_datetime_analysis
+    data = get_results_with_datetime_analysis()
+    return jsonify(data)
+
+@app.route('/tags')
+def tags():
+    from utils.db_client import get_all_tags
+    data = get_all_tags()
+    return jsonify(data)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
