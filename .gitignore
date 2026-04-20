@@ -8,3 +8,5 @@ __pycache__/
 logs/
 .env
 .DS_Store
+scripts/sync.py
+data/last_sync.txt

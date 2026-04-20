@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.api_client import get_markets, get_orderbook, save_to_csv
 from utils.db_client import save_to_db, init_db
 import time
+from zoneinfo import ZoneInfo
 from datetime import datetime
 
 def get_market_info():
@@ -48,7 +49,7 @@ def collect_orderbook():
         first_ask = asks[0] if asks else {"price": "0.00", "amount": "0.00"}
 
         data = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(ZoneInfo("America/Recife")).isoformat(),
             "marketId": market_id,
             "tag": market.get("tag", "N/A"),
             "selectionId": selection_id,
